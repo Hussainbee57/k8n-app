@@ -1,12 +1,18 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKER_HOST = "unix:///home/user/.docker/desktop/docker.sock"
+        DOCKER_USER = "DOCKER_HUB_LAB"
+        DOCKER_PASS = credentials('docker-hub-cred')  // Jenkins credential ID
+    }
+
     stages {
 
         stage('Checkout from GitHub') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/shaikhussainbee/k8n-app.git'
+                git branch: 'master',
+                    url: 'https://github.com/Bhuvaneshwari-bhu/k8n.git'
             }
         }
 
@@ -19,18 +25,31 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 sh '''
-                docker build -t k8n-app:${BUILD_NUMBER} .
-                docker tag k8n-app:${BUILD_NUMBER} shaikhussainbee/k8n-app:${BUILD_NUMBER}
+                docker build -t k8n:${BUILD_NUMBER} .
+                docker tag k8n:${BUILD_NUMBER} shaikhussainbee/k8n:${BUILD_NUMBER}
                 '''
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Docker Login & Push') {
             steps {
-                sh 'docker push shaikhussainbee/k8n-app:${BUILD_NUMBER}'
+                sh '''
+                echo $DOCKER_PASS | docker login -u shaikhussainbee --password-stdin
+
+                docker push shaikhussainbee/k8n:${BUILD_NUMBER}
+                '''
             }
         }
-}
 
-        
+        stage('Deploy Container') {
+            steps {
+                sh '''
+                docker stop k8n-container || true
+                docker rm k8n-container || true
+
+                docker run -d -p 3000:8080 --name k8n-container shaikhussainbee/k8n:${BUILD_NUMBER}
+                '''
+            }
+        }
+    }
 }
