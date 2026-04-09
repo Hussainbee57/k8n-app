@@ -33,9 +33,22 @@ node {
 
     stage('Deploy Container') {
         sh '''
-        docker stop k8n-container || true
-        docker rm k8n-container || true
-        docker run -d -p 3000:8080 --name k8n-container shaikhussainbee/k8n:${BUILD_NUMBER}
+        # Remove old container if exists
+        docker rm -f k8n-container || true
+
+        # Decide port
+        if lsof -i:3000 >/dev/null 2>&1; then
+            echo "Port 3000 busy → using 3005"
+            PORT=3005
+        else
+            echo "Port 3000 free → using 3000"
+            PORT=3000
+        fi
+
+        # Run container (app runs on 8080 inside)
+        docker run -d -p $PORT:8080 --name k8n-container shaikhussainbee/k8n:${BUILD_NUMBER}
+
+        echo "🚀 App running at: http://localhost:$PORT"
         '''
     }
 }
