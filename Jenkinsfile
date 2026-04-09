@@ -1,7 +1,3 @@
-pipeline {
-agent any
-
-```
 environment {
     DOCKER_HOST = "unix:///home/user/.docker/desktop/docker.sock"
 }
@@ -50,7 +46,6 @@ stages {
             sh '''
             docker stop k8n-container || true
             docker rm k8n-container || true
-
             docker run -d -p 3000:8080 --name k8n-container shaikhussainbee/k8n:${BUILD_NUMBER}
             '''
         }
@@ -59,12 +54,9 @@ stages {
 
 post {
     success {
-        echo '✅ Pipeline executed successfully!'
+        echo 'Pipeline Success'
     }
     failure {
-        echo '❌ Pipeline failed. Check logs!'
+        echo 'Pipeline Failed'
     }
-}
-```
-
 }
